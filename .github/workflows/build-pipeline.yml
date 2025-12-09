@@ -32,3 +32,11 @@ jobs:
       terraform_version: ${{ github.event.inputs.terraform_version || '1.9.0' }}
       runs_on: 'ubuntu-latest'
       artifact_name: 'terraform-source'
+
+  export-artifact:
+    needs: build-and-validate
+    runs-on: 'ubuntu-latest'
+    outputs:
+      source-artifact: terraform-source-${{ needs.build-and-validate.outputs.run-number || github.run_number }}
+    steps:
+      - run: echo "Artifact ready for downstream"
