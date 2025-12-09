@@ -1,0 +1,72 @@
+# Main Deployment Pipeline: deployment-pipeline.yml
+# Purpose: Build se validated artifact download karke deployment karna
+# Isko .github/workflows/ directory me rakho
+
+name: Terraform Deployment Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev01
+          - qa01
+          - prod01
+      build_run_number:
+        description: 'Build run number to deploy'
+        required: true
+        type: string
+  
+  # Optional: Auto-deploy after successful build
+  workflow_run:
+    workflows: ["Terraform CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  # Download build artifact from previous workflow
+  download-build:
+    name: Download Build Artifact
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Download Artifact from Build Workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+          path: ./terraform-source
+          # Note: Cross-workflow artifact download requires same repo
+          # For different repos, use GitHub API or artifact storage
+      
+      - name: Re-upload for Deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+          path: ./terraform-source
+
+  # Call the reusable deployment workflow
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'dev01' }}
+    needs: download-build
+    uses: ./.github/workflows/terraform-plan-approve-apply.yml
+    with:
+      terraform_version: '1.9.0'
+      runs_on: 'ubuntu-latest'
+      build_run_number: ${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+      environment_path: 'environments/${{ github.event.inputs.environment || 'dev01' }}'
+      backend_storage_account: 'tfstatedev01'  # Change per environment
+      backend_container_name: 'terraform'
+      backend_state_key: '${{ github.event.inputs.environment || 'dev01' }}.tfstate'
+      backend_resource_group: 'rg-terraform-state-dev'  # Change per environment
+      artifact_name_prefix: 'terraform-source'
+      environment_name: '${{ github.event.inputs.environment || 'dev01' }}'  # GitHub Environment name
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
