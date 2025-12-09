@@ -1,0 +1,242 @@
+# Reusable Workflow: terraform-plan-approve-apply.yml
+# Purpose: Plan, Manual Approval, aur Apply ke saath Terraform deployment
+# Usage: Is workflow ko apne deployment workflow me call karo
+
+name: Terraform Plan, Approve & Apply
+
+on:
+  workflow_call:
+    inputs:
+      terraform_version:
+        description: 'Terraform version'
+        required: false
+        type: string
+        default: 'latest'
+      runs_on:
+        description: 'Runner to use'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+      build_run_number:
+        description: 'Build pipeline run number'
+        required: true
+        type: string
+      environment_path:
+        description: 'Terraform environment path (e.g., environments/dev01)'
+        required: true
+        type: string
+      backend_storage_account:
+        description: 'Backend storage account name'
+        required: true
+        type: string
+      backend_container_name:
+        description: 'Backend container name'
+        required: false
+        type: string
+        default: 'terraform'
+      backend_state_key:
+        description: 'Terraform state file key (e.g., poc.tfstate)'
+        required: true
+        type: string
+      backend_resource_group:
+        description: 'Resource group for backend storage'
+        required: true
+        type: string
+      artifact_name_prefix:
+        description: 'Artifact name prefix'
+        required: false
+        type: string
+        default: 'terraform-source'
+      environment_name:
+        description: 'GitHub Environment for approval (e.g., production)'
+        required: true
+        type: string
+    secrets:
+      AZURE_CLIENT_ID:
+        description: 'Azure Client ID for OIDC'
+        required: true
+      AZURE_TENANT_ID:
+        description: 'Azure Tenant ID'
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: 'Azure Subscription ID'
+        required: true
+      # Alternative: Use traditional credentials (not recommended)
+      # AZURE_CREDENTIALS:
+      #   description: 'Azure Service Principal JSON'
+      #   required: false
+
+env:
+  SOURCE_ARTIFACT: ${{ inputs.artifact_name_prefix }}-${{ inputs.build_run_number }}
+  PLAN_ARTIFACT: terraform-plan-${{ inputs.build_run_number }}
+  TF_WORKING_DIR: ${{ github.workspace }}/${{ inputs.environment_path }}
+
+jobs:
+  # ===============================================================
+  # JOB 1: Terraform Plan
+  # ===============================================================
+  terraform-plan:
+    name: Generate Terraform Plan
+    runs-on: ${{ inputs.runs_on }}
+    permissions:
+      id-token: write  # Required for OIDC
+      contents: read
+      pull-requests: write  # For PR comments
+    
+    steps:
+      - name: Download Terraform Source Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: ${{ github.workspace }}
+      
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+      
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ inputs.backend_resource_group }}" \
+            -backend-config="storage_account_name=${{ inputs.backend_storage_account }}" \
+            -backend-config="container_name=${{ inputs.backend_container_name }}" \
+            -backend-config="key=${{ inputs.backend_state_key }}"
+      
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan -out=tfplan -input=false -no-color | tee plan_output.txt
+          
+          # Save plan summary
+          echo "## Terraform Plan Summary" > plan_summary.md
+          echo '```terraform' >> plan_summary.md
+          cat plan_output.txt >> plan_summary.md
+          echo '```' >> plan_summary.md
+        continue-on-error: false
+      
+      - name: Convert Plan to JSON (for review)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform show -json tfplan > tfplan.json
+      
+      - name: Upload Plan Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan
+            ${{ env.TF_WORKING_DIR }}/tfplan.json
+            ${{ env.TF_WORKING_DIR }}/plan_output.txt
+            ${{ env.TF_WORKING_DIR }}/plan_summary.md
+          retention-days: 30
+      
+      - name: Comment Plan on PR (if PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planSummary = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: planSummary
+            });
+
+  # ===============================================================
+  # JOB 2: Manual Approval (using GitHub Environments)
+  # ===============================================================
+  await-approval:
+    name: Wait for Manual Approval
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment_name }}  # This triggers approval
+    
+    steps:
+      - name: Approval Gate Passed
+        run: |
+          echo "✅ Manual approval received for build ${{ inputs.build_run_number }}"
+          echo "Plan artifact: ${{ env.PLAN_ARTIFACT }}"
+
+  # ===============================================================
+  # JOB 3: Terraform Apply
+  # ===============================================================
+  terraform-apply:
+    name: Apply Terraform Changes
+    needs: await-approval
+    runs-on: ${{ inputs.runs_on }}
+    permissions:
+      id-token: write  # Required for OIDC
+      contents: read
+    
+    steps:
+      - name: Download Terraform Source
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: ${{ github.workspace }}
+      
+      - name: Download Approved Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: ${{ github.workspace }}/approved-plan
+      
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+      
+      - name: Terraform Init (Apply)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -reconfigure -upgrade -input=false \
+            -backend-config="resource_group_name=${{ inputs.backend_resource_group }}" \
+            -backend-config="storage_account_name=${{ inputs.backend_storage_account }}" \
+            -backend-config="container_name=${{ inputs.backend_container_name }}" \
+            -backend-config="key=${{ inputs.backend_state_key }}"
+      
+      - name: Fix Provider Permissions
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          pwd
+          ls -lart
+          find .terraform/providers -type f -exec chmod +x {} \; 2>/dev/null || true
+      
+      - name: Terraform Apply (Approved Plan)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform apply -input=false ${{ github.workspace }}/approved-plan/tfplan
+      
+      - name: Post Apply Summary
+        if: success()
+        run: |
+          echo "## ✅ Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ inputs.build_run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: ${{ inputs.environment_path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- State Key: ${{ inputs.backend_state_key }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "## ❌ Terraform Apply Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Check logs for details" >> $GITHUB_STEP_SUMMARY
