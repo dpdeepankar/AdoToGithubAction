@@ -35,25 +35,25 @@ permissions:
   
 jobs:
   # Download build artifact from previous workflow
-  download-build:
-    name: Download Build Artifact
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+  # download-build:
+  #   name: Download Build Artifact
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     
-    steps:
-      - name: Download Artifact from Build Workflow
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
-          path: ./terraform-source
-          # Note: Cross-workflow artifact download requires same repo
-          # For different repos, use GitHub API or artifact storage
+  #   steps:
+  #     - name: Download Artifact from Build Workflow
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+  #         path: ./terraform-source
+  #         # Note: Cross-workflow artifact download requires same repo
+  #         # For different repos, use GitHub API or artifact storage
       
-      - name: Re-upload for Deployment
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
-          path: ./terraform-source
+  #     - name: Re-upload for Deployment
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: terraform-source-${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+  #         path: ./terraform-source
 
   # Call the reusable deployment workflow
   deploy:
@@ -61,6 +61,7 @@ jobs:
     needs: download-build
     uses: ./.github/workflows/terraform-plan-approve-apply.yml
     with:
+      run_id: ${{ inputs.build_run_number }}
       terraform_version: '1.9.0'
       runs_on: 'ubuntu-latest'
       build_run_number: ${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
