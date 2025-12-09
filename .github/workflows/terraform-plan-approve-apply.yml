@@ -7,6 +7,10 @@ name: Terraform Plan, Approve & Apply
 on:
   workflow_call:
     inputs:
+      run_id: 
+        description: build workflow run id
+        required: true
+        type: string
       terraform_version:
         description: 'Terraform version'
         required: false
@@ -86,10 +90,12 @@ jobs:
     steps:
       # CRITICAL: Download artifact from build workflow
       - name: Download Terraform Source Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ env.SOURCE_ARTIFACT }}
-          path: ${{ github.workspace }}
+          github-token: ${{ github.token }}
+          repository: AdoToGithubAction
+          run-id: ${{ inputs.run_id }}
         continue-on-error: false  # Fail if artifact not found
       
       - name: Azure Login (OIDC)
