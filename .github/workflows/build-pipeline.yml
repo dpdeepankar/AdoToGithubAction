@@ -1,0 +1,17 @@
+name: Terraform Build Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform-build-and-deploy/environments/**'
+      - 'terraform-build-and-deploy/modules/**'
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-terraform-validate-build.yml
+    with:
+      working-directory-base: 'terraform-build-and-deploy'
+      terraform-version: '1.9.0'
+      artifact-name: 'terraform-source'
