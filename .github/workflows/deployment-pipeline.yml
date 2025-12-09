@@ -61,7 +61,6 @@ jobs:
     needs: download-build
     uses: ./.github/workflows/terraform-plan-approve-apply.yml
     with:
-      run_id: ${{ github.event.inputs.build_run_number }}
       terraform_version: '1.9.0'
       runs_on: 'ubuntu-latest'
       build_run_number: ${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
