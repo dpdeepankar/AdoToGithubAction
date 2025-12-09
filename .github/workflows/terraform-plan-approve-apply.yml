@@ -7,10 +7,6 @@ name: Terraform Plan, Approve & Apply
 on:
   workflow_call:
     inputs:
-      run_id: 
-        description: build workflow run id
-        required: true
-        type: string
       terraform_version:
         description: 'Terraform version'
         required: false
@@ -95,7 +91,7 @@ jobs:
           name: ${{ env.SOURCE_ARTIFACT }}
           github-token: ${{ github.token }}
           repository: AdoToGithubAction
-          run-id: ${{ inputs.run_id }}
+          run-id: ${{ inputs.build_run_number }}
         continue-on-error: false  # Fail if artifact not found
       
       - name: Azure Login (OIDC)
