@@ -20,14 +20,19 @@ on:
         required: true
         type: string
   
-  # Optional: Auto-deploy after successful build
-  workflow_run:
-    workflows: ["Terraform CI/CD Pipeline"]
-    types:
-      - completed
-    branches:
-      - main
-
+  # # Optional: Auto-deploy after successful build
+  # workflow_run:
+  #   workflows: ["Terraform CI/CD Pipeline"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - main
+  
+permissions:
+  contents: read          # Usually required
+  id-token: write         # For OIDC (Azure login etc.)
+  pull-requests: write    # Agar PR comments / status updates kar rahe ho
+  
 jobs:
   # Download build artifact from previous workflow
   download-build:
