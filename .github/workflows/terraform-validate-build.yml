@@ -102,14 +102,14 @@ jobs:
       - name: Set Artifact Name
         id: set-artifact
         run: |
-          ARTIFACT_NAME="terraform-source-${{ github.run_number }}"
+          ARTIFACT_NAME="terraform-source-latest"
           echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "📦 Artifact Name: $ARTIFACT_NAME"
       
       - name: Upload Terraform Source Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-source-${{ github.run_number }}
+          name: terraform-source-latest
           path: terraform-build-and-deploy/
           retention-days: 90  # 3 months retention
           if-no-files-found: error
