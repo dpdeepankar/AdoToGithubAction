@@ -1,0 +1,21 @@
+name: terraform-deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev01, uat, prd etc.)'
+        required: true
+        default: dev01
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/terraform-plan-apply-template.yml
+    with:
+      environmentPath: 'environments/${{ github.event.inputs.environment }}'
+      terraformVersion: 'latest'
+      backendStorageAccount: 'adoterraformstate'
+      backendContainerName: 'terraform'
+      backendStateKey: 'poc.tfstate'
+      azureSubscription: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      environment: 'dev01'   # GitHub environment name, per env tune kar sakta hai

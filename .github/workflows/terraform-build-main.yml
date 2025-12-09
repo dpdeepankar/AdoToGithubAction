@@ -1,0 +1,17 @@
+name: terraform-build-main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform-build-and-deploy/environments/**'
+      - 'terraform-build-and-deploy/modules/**'
+
+jobs:
+  terraform-validate-build:
+    uses: ./.github/workflows/terraform-validate-build-template.yml
+    with:
+      workingDirectoryBase: 'terraform-build-and-deploy'
+      terraformVersion: '1.9.0'
+      artifactName: 'terraform-source'

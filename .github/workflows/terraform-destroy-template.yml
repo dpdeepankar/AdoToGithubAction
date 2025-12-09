@@ -1,0 +1,116 @@
+name: terraform-destroy
+
+on:
+  workflow_call:
+    inputs:
+      environmentPath:
+        required: true
+        type: string
+      terraformVersion:
+        required: true
+        type: string
+      backendStorageAccount:
+        required: true
+        type: string
+      backendContainerName:
+        required: true
+        type: string
+      backendStateKey:
+        required: true
+        type: string
+      azureSubscription:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+jobs:
+  destroy-plan:
+    name: Terraform Destroy Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraformVersion }}
+
+      - name: Az login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ inputs.azureSubscription }}
+
+      - name: Terraform Init
+        working-directory: terraform-build-and-deploy/${{ inputs.environmentPath }}
+        run: |
+          terraform init \
+            -backend-config="storage_account_name=${{ inputs.backendStorageAccount }}" \
+            -backend-config="container_name=${{ inputs.backendContainerName }}" \
+            -backend-config="key=${{ inputs.backendStateKey }}"
+
+      - name: Terraform Destroy Plan
+        working-directory: terraform-build-and-deploy/${{ inputs.environmentPath }}
+        run: |
+          terraform plan -destroy -out=destroy.tfplan -input=false
+
+      - name: Upload destroy plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-destroy-plan-${{ github.run_number }}
+          path: terraform-build-and-deploy/${{ inputs.environmentPath }}/destroy.tfplan
+
+  destroy-apply:
+    name: Terraform Destroy (approved)
+    needs: destroy-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}   # is env par required reviewers lagao (CRITICAL)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraformVersion }}
+
+      - name: Az login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ inputs.azureSubscription }}
+
+      - name: Download destroy plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-destroy-plan-${{ github.run_number }}
+          path: terraform-destroy-plan
+
+      - name: Terraform Init (Destroy)
+        working-directory: terraform-build-and-deploy/${{ inputs.environmentPath }}
+        run: |
+          terraform init \
+            -backend-config="storage_account_name=${{ inputs.backendStorageAccount }}" \
+            -backend-config="container_name=${{ inputs.backendContainerName }}" \
+            -backend-config="key=${{ inputs.backendStateKey }}" \
+            -reconfigure -upgrade -input=false
+
+      - name: Fix provider permissions (optional)
+        working-directory: terraform-build-and-deploy/${{ inputs.environmentPath }}
+        run: |
+          if [ -d .terraform/providers ]; then
+            find .terraform/providers -type f -exec chmod +x {} \;
+          fi
+
+      - name: Terraform Destroy (apply approved plan)
+        working-directory: terraform-build-and-deploy/${{ inputs.environmentPath }}
+        run: |
+          terraform apply -input=false "$(pwd)/../terraform-destroy-plan/destroy.tfplan"
