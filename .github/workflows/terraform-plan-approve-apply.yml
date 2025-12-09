@@ -82,6 +82,7 @@ jobs:
       id-token: write  # Required for OIDC
       contents: read
       pull-requests: write  # For PR comments
+      actions: read
     
     steps:
       # CRITICAL: Download artifact from build workflow
