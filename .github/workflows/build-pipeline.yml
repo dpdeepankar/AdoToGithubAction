@@ -8,13 +8,12 @@ on:
   push:
     branches:
       - main
-      - develop
+      - feature/github
     paths:
       - 'terraform-build-and-deploy/**'
   pull_request:
     branches:
       - main
-      - develop
     paths:
       - 'terraform-build-and-deploy/**'
   workflow_dispatch:
