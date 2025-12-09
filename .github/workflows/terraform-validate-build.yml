@@ -32,7 +32,8 @@ jobs:
   validate-and-package:
     name: Validate and Package Terraform
     runs-on: ${{ inputs.runs_on }}
-    
+    outputs:
+      source-artifact: terraform-source-${{ github.run_number }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
