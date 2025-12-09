@@ -1,0 +1,35 @@
+# Main Pipeline: main-pipeline.yml
+# Purpose: Main workflow jo terraform-validate-build.yml ko call karta hai
+# Isko .github/workflows/ directory me rakho
+
+name: Terraform CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'terraform-build-and-deploy/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'terraform-build-and-deploy/**'
+  workflow_dispatch:
+    inputs:
+      terraform_version:
+        description: 'Terraform version'
+        required: false
+        default: '1.9.0'
+
+jobs:
+  build-and-validate:
+    name: Build and Validate Stage
+    uses: ./.github/workflows/terraform-validate-build.yml
+    with:
+      working_directory_base: 'terraform-build-and-deploy'
+      terraform_version: ${{ github.event.inputs.terraform_version || '1.9.0' }}
+      runs_on: 'ubuntu-latest'
+      artifact_name: 'terraform-source'
