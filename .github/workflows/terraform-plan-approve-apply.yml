@@ -86,14 +86,11 @@ jobs:
     
     steps:
       # CRITICAL: Download artifact from build workflow
-      - name: Download Terraform Source Artifact
-        uses: actions/download-artifact@v5
+      - name: Download Terraform Source
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.SOURCE_ARTIFACT }}
-          github-token: ${{ github.token }}
-          repository: dpdeepankar/AdoToGithubAction
-          run-id: ${{ inputs.build_run_number }}
-        continue-on-error: false  # Fail if artifact not found
+          path: ${{ github.workspace }} # Fail if artifact not found
       
       - name: Azure Login (OIDC)
         uses: azure/login@v2
