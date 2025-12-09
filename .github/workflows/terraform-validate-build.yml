@@ -98,10 +98,28 @@ jobs:
           
           echo "✅ All Terraform validations passed"
       
+      - name: Set Artifact Name
+        id: set-artifact
+        run: |
+          ARTIFACT_NAME="terraform-source-${{ github.run_number }}"
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "📦 Artifact Name: $ARTIFACT_NAME"
+      
       - name: Upload Terraform Source Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.artifact_name }}-${{ github.run_number }}
-          path: ${{ inputs.working_directory_base }}
-          retention-days: 30
+          name: terraform-source-${{ github.run_number }}
+          path: terraform-build-and-deploy/
+          retention-days: 90  # 3 months retention
           if-no-files-found: error
+      
+      - name: Build Summary
+        run: |
+          echo "## ✅ Build Completed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Name:** terraform-source-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Ready for deployment!" >> $GITHUB_STEP_SUMMARY
