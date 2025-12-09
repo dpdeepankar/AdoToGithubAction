@@ -58,7 +58,6 @@ jobs:
   # Call the reusable deployment workflow
   deploy:
     name: Deploy to ${{ github.event.inputs.appenvironment || 'dev01' }}
-    needs: download-build
     uses: ./.github/workflows/terraform-plan-approve-apply.yml
     with:
       terraform_version: '1.9.0'
