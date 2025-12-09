@@ -1,0 +1,100 @@
+# Template: terraform-validate-build.yml
+# Purpose: Validate aur package Terraform configurations
+# Usage: Iss template ko apne main pipeline me extend karo
+
+parameters:
+  - name: workingDirectoryBase
+    type: string
+    default: 'terraform-build-and-deploy'
+    displayName: 'Terraform base directory path'
+  
+  - name: terraformVersion
+    type: string
+    default: '1.9.0'
+    displayName: 'Terraform version to install'
+  
+  - name: vmImage
+    type: string
+    default: 'ubuntu-latest'
+    displayName: 'Agent VM image'
+  
+  - name: artifactName
+    type: string
+    default: 'terraform-source'
+    displayName: 'Artifact name prefix'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Validate'
+    jobs:
+      - job: ValidateAndPackage
+        displayName: 'Validate and Package Terraform'
+        pool:
+          vmImage: ${{ parameters.vmImage }}
+        
+        steps:
+          - checkout: self
+            displayName: 'Checkout Source Code'
+          
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: ${{ parameters.terraformVersion }}
+          
+          - task: Bash@3
+            displayName: 'Validate Terraform Syntax'
+            inputs:
+              targetType: 'inline'
+              script: |
+                set -uo pipefail
+                
+                WORKING_DIR_BASE="${{ parameters.workingDirectoryBase }}"
+                echo "Working Directory Base: $WORKING_DIR_BASE"
+                
+                if [[ -z "$WORKING_DIR_BASE" ]]; then
+                  echo "Error: Working Directory Base not set" >&2
+                  exit 2
+                fi
+                
+                WORKING_DIR_BASE="$(cd "$WORKING_DIR_BASE" && pwd)"
+                
+                mapfile -t tf_dirs < <(find "$WORKING_DIR_BASE" -type f -name '*.tf' -printf '%h\n' | sort -u)
+                
+                if [[ ${#tf_dirs[@]} -eq 0 ]]; then
+                  echo "No Terraform directories found under: $WORKING_DIR_BASE"
+                  exit 0
+                fi
+                
+                for dir in "${tf_dirs[@]}"; do
+                  echo "Validating: $dir"
+                  (
+                    cd "$dir" || exit 1
+                    
+                    terraform init -backend=false
+                    init_status=$?
+                    if [[ $init_status -ne 0 ]]; then
+                      echo "##vso[task.logissue type=error]Terraform init failed for $dir"
+                      exit 1
+                    fi
+                    
+                    terraform validate
+                    validate_status=$?
+                    if [[ $validate_status -ne 0 ]]; then
+                      echo "##vso[task.logissue type=error]Validation failed for $dir"
+                      exit 1
+                    fi
+                  )
+                  
+                  if [[ $? -ne 0 ]]; then
+                    exit 1
+                  fi
+                done
+                
+                echo "All Terraform validations passed"
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Terraform Source Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/${{ parameters.workingDirectoryBase }}'
+              artifactName: '${{ parameters.artifactName }}-$(Build.BuildNumber)'
+              publishLocation: 'pipeline'

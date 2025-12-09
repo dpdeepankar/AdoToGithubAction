@@ -1,0 +1,17 @@
+# azure-pipelines.yml (Main Pipeline)
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform-build-and-deploy/environments/*
+      - terraform-build-and-deploy/modules/*
+
+# Template ko extend karo
+extends:
+  template: pipeline-templates/terraform-validate-build.yml
+  parameters:
+    workingDirectoryBase: 'terraform-build-and-deploy'
+    terraformVersion: '1.9.0'
+    vmImage: 'ubuntu-latest'

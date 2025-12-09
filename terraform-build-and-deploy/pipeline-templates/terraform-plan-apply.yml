@@ -1,0 +1,212 @@
+# Template: terraform-plan-approve-apply.yml
+# Purpose: Plan, Manual Approval, aur Apply ke saath Terraform deployment
+# Usage: Iss template ko apne deployment pipeline me extend karo
+
+parameters:
+  - name: terraformVersion
+    type: string
+    default: 'latest'
+    displayName: 'Terraform version'
+  
+  - name: vmImage
+    type: string
+    default: 'ubuntu-latest'
+    displayName: 'Agent VM image'
+  
+  - name: buildPipelineSource
+    type: string
+    displayName: 'Build pipeline ka naam (source)'
+  
+  - name: environmentPath
+    type: string
+    displayName: 'Terraform environment path (e.g., environments/dev01)'
+  
+  - name: backendServiceConnection
+    type: string
+    displayName: 'Azure service connection for backend'
+  
+  - name: backendStorageAccount
+    type: string
+    displayName: 'Backend storage account name'
+  
+  - name: backendContainerName
+    type: string
+    default: 'terraform'
+    displayName: 'Backend container name'
+  
+  - name: backendStateKey
+    type: string
+    displayName: 'Terraform state file key (e.g., poc.tfstate)'
+  
+  - name: azureServiceConnection
+    type: string
+    displayName: 'Azure service connection for deployment'
+  
+  - name: approvalTimeoutInMinutes
+    type: number
+    default: 1440
+    displayName: 'Manual approval timeout (minutes)'
+  
+  - name: jobTimeoutInMinutes
+    type: number
+    default: 4320
+    displayName: 'Job timeout (minutes)'
+
+variables:
+  buildNumber: $[ resources.pipeline.buildPipeline.runName ]
+  sourceArtifact: terraform-source-$(resources.pipeline.buildPipeline.runName)
+  planArtifact: terraform-plan-$(resources.pipeline.buildPipeline.runName)
+  tfWorkingDir: '$(Pipeline.Workspace)/buildPipeline/${{ variables.sourceArtifact }}/${{ parameters.environmentPath }}'
+
+stages:
+# ===============================================================
+# STAGE 1: Plan + Publish Plan
+# ===============================================================
+- stage: Plan
+  displayName: 'Terraform Plan - Build $(buildNumber)'
+  jobs:
+  - job: GeneratePlan
+    displayName: 'Generate & Publish Plan'
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    
+    steps:
+    # Download source from build pipeline
+    - download: buildPipeline
+      artifact: ${{ variables.sourceArtifact }}
+      displayName: 'Download Terraform Source from Build $(buildNumber)'
+    
+    # Install Terraform
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: ${{ parameters.terraformVersion }}
+    
+    # Terraform Init
+    - task: TerraformTask@5
+      displayName: 'Run Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: ${{ parameters.backendServiceConnection }}
+        backendAzureRmStorageAccountName: ${{ parameters.backendStorageAccount }}
+        backendAzureRmContainerName: ${{ parameters.backendContainerName }}
+        backendAzureRmKey: ${{ parameters.backendStateKey }}
+        workingDirectory: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}
+    
+    # Terraform Plan
+    - task: TerraformTask@5
+      name: tfPlan
+      displayName: 'Terraform Plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        commandOptions: '-out=tfplan -input=false -no-color'
+        environmentServiceNameAzureRM: ${{ parameters.azureServiceConnection }}
+        workingDirectory: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}
+    
+    # Show plan in separate tab
+    - task: TerraformOutput@1
+      displayName: 'Show Plan in Tab'
+      inputs:
+        outputFilePath: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}/tfplan
+        artifactName: ${{ variables.planArtifact }}
+    
+    # Publish binary plan
+    - publish: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}/tfplan
+      artifact: ${{ variables.planArtifact }}
+      displayName: 'Publish Plan Artifact'
+
+# ===============================================================
+# STAGE 2: Manual Approval
+# ===============================================================
+- stage: Approval
+  displayName: 'Manual Approval'
+  dependsOn: Plan
+  condition: succeeded()
+  jobs:
+  - job: WaitForValidation
+    displayName: 'Wait for External Validation'
+    pool: server
+    timeoutInMinutes: ${{ parameters.jobTimeoutInMinutes }}
+    
+    steps:
+    - task: ManualValidation@1
+      timeoutInMinutes: ${{ parameters.approvalTimeoutInMinutes }}
+      inputs:
+        notifyUsers: ''
+        instructions: |
+          Please review the Terraform plan before approving:
+
+          • Click the "Terraform Plan" tab above (formatted view)
+          • Or download the plan artifact
+
+          Approve → terraform apply will run automatically.
+        onTimeout: 'reject'
+
+# ===============================================================
+# STAGE 3: Apply
+# ===============================================================
+- stage: Apply
+  displayName: 'Terraform Apply'
+  dependsOn: Approval
+  condition: succeeded()
+  jobs:
+  - job: TerraformApply
+    displayName: 'Terraform Apply - Build $(buildNumber)'
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    
+    steps:
+    # Re-download source
+    - download: buildPipeline
+      artifact: ${{ variables.sourceArtifact }}
+      displayName: 'Download Terraform Source'
+    
+    # Download approved plan
+    - download: current
+      artifact: ${{ variables.planArtifact }}
+      displayName: 'Download Approved Plan'
+    
+    # Install Terraform
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: ${{ parameters.terraformVersion }}
+    
+    # Re-init
+    - task: TerraformTask@5
+      displayName: 'Terraform Init (Apply)'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        commandOptions: '-reconfigure -upgrade -input=false'
+        backendServiceArm: ${{ parameters.backendServiceConnection }}
+        backendAzureRmStorageAccountName: ${{ parameters.backendStorageAccount }}
+        backendAzureRmContainerName: ${{ parameters.backendContainerName }}
+        backendAzureRmKey: ${{ parameters.backendStateKey }}
+        workingDirectory: $(tfWorkingDir)
+    
+    # Fix permissions (if needed)
+    - task: Bash@3
+      displayName: 'Fix Provider Permissions'
+      inputs:
+        targetType: 'inline'
+        script: |
+          pwd
+          ls -lart *
+          cd $(tfWorkingDir)
+          pwd
+          ls -lart *
+          find $(tfWorkingDir)/.terraform/providers -type f -exec chmod +x {} \;
+    
+    # Apply the approved plan
+    - task: TerraformTask@5
+      displayName: 'Terraform Apply (Approved Plan)'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        commandOptions: '-input=false $(Pipeline.Workspace)/${{ variables.planArtifact }}/tfplan'
+        environmentServiceNameAzureRM: ${{ parameters.azureServiceConnection }}
+        workingDirectory: $(tfWorkingDir)
+    

@@ -1,0 +1,217 @@
+# Template: terraform-destroy.yml
+# Purpose: Plan, Manual Approval, aur Destroy ke saath Terraform infrastructure teardown
+# Usage: Iss template ko apne destroy pipeline me extend karo
+
+parameters:
+  - name: terraformVersion
+    type: string
+    default: 'latest'
+    displayName: 'Terraform version'
+  
+  - name: vmImage
+    type: string
+    default: 'ubuntu-latest'
+    displayName: 'Agent VM image'
+  
+  - name: buildPipelineSource
+    type: string
+    displayName: 'Build pipeline ka naam (source)'
+  
+  - name: environmentPath
+    type: string
+    displayName: 'Terraform environment path (e.g., environments/dev01)'
+  
+  - name: backendServiceConnection
+    type: string
+    displayName: 'Azure service connection for backend'
+  
+  - name: backendStorageAccount
+    type: string
+    displayName: 'Backend storage account name'
+  
+  - name: backendContainerName
+    type: string
+    default: 'terraform'
+    displayName: 'Backend container name'
+  
+  - name: backendStateKey
+    type: string
+    displayName: 'Terraform state file key (e.g., poc.tfstate)'
+  
+  - name: azureServiceConnection
+    type: string
+    displayName: 'Azure service connection for deployment'
+  
+  - name: approvalTimeoutInMinutes
+    type: number
+    default: 1440
+    displayName: 'Manual approval timeout (minutes)'
+  
+  - name: jobTimeoutInMinutes
+    type: number
+    default: 4320
+    displayName: 'Job timeout (minutes)'
+
+variables:
+  buildNumber: $[ resources.pipeline.buildPipeline.runName ]
+  sourceArtifact: terraform-source-$(resources.pipeline.buildPipeline.runName)
+  planArtifact: terraform-plan-$(resources.pipeline.buildPipeline.runName)
+  tfWorkingDir: '$(Pipeline.Workspace)/buildPipeline/${{ variables.sourceArtifact }}/${{ parameters.environmentPath }}'
+
+stages:
+# ===============================================================
+# STAGE 1: Destroy Plan + Publish
+# ===============================================================
+- stage: Plan
+  displayName: 'Terraform Destroy Plan - Build $(buildNumber)'
+  jobs:
+  - job: GenerateDestroyPlan
+    displayName: 'Generate & Publish Destroy Plan'
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    
+    steps:
+    # Download source from build pipeline
+    - download: buildPipeline
+      artifact: ${{ variables.sourceArtifact }}
+      displayName: 'Download Terraform Source from Build $(buildNumber)'
+    
+    # Install Terraform
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: ${{ parameters.terraformVersion }}
+    
+    # Terraform Init
+    - task: TerraformTask@5
+      displayName: 'Run Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: ${{ parameters.backendServiceConnection }}
+        backendAzureRmStorageAccountName: ${{ parameters.backendStorageAccount }}
+        backendAzureRmContainerName: ${{ parameters.backendContainerName }}
+        backendAzureRmKey: ${{ parameters.backendStateKey }}
+        workingDirectory: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}
+    
+    # Terraform Destroy Plan
+    - task: TerraformTask@5
+      name: tfDestroyPlan
+      displayName: 'Terraform Destroy Plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        commandOptions: '-destroy -out=destroy.tfplan -input=false'
+        environmentServiceNameAzureRM: ${{ parameters.azureServiceConnection }}
+        workingDirectory: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}
+    
+    # Show destroy plan in separate tab
+    - task: TerraformOutput@1
+      displayName: 'Show Destroy Plan in Tab'
+      inputs:
+        outputFilePath: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}/destroy.tfplan
+        artifactName: ${{ variables.planArtifact }}
+    
+    # Publish binary destroy plan
+    - publish: $(System.DefaultWorkingDirectory)/terraform-build-and-deploy/${{ parameters.environmentPath }}/destroy.tfplan
+      artifact: ${{ variables.planArtifact }}
+      displayName: 'Publish Destroy Plan Artifact'
+
+# ===============================================================
+# STAGE 2: Manual Approval (Critical for Destroy!)
+# ===============================================================
+- stage: Approval
+  displayName: 'Manual Approval for DESTROY'
+  dependsOn: Plan
+  condition: succeeded()
+  jobs:
+  - job: WaitForValidation
+    displayName: '⚠️ CRITICAL: Wait for Destroy Approval'
+    pool: server
+    timeoutInMinutes: ${{ parameters.jobTimeoutInMinutes }}
+    
+    steps:
+    - task: ManualValidation@1
+      timeoutInMinutes: ${{ parameters.approvalTimeoutInMinutes }}
+      inputs:
+        notifyUsers: ''
+        instructions: |
+          ⚠️⚠️⚠️ CRITICAL ACTION: TERRAFORM DESTROY ⚠️⚠️⚠️
+
+          You are about to DESTROY all infrastructure in this environment!
+
+          Please review the Terraform destroy plan carefully:
+          • Click the "Terraform Plan" tab above (formatted view)
+          • Verify you want to delete ALL resources shown
+          • Download the plan artifact if needed
+
+          ⚠️ THIS ACTION CANNOT BE UNDONE ⚠️
+
+          Only approve if you are absolutely certain!
+        onTimeout: 'reject'
+
+# ===============================================================
+# STAGE 3: Destroy (Execute Approved Destroy Plan)
+# ===============================================================
+- stage: Destroy
+  displayName: 'Terraform Destroy'
+  dependsOn: Approval
+  condition: succeeded()
+  jobs:
+  - job: TerraformDestroy
+    displayName: 'Terraform Destroy - Build $(buildNumber)'
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    
+    steps:
+    # Re-download source
+    - download: buildPipeline
+      artifact: ${{ variables.sourceArtifact }}
+      displayName: 'Download Terraform Source'
+    
+    # Download approved destroy plan
+    - download: current
+      artifact: ${{ variables.planArtifact }}
+      displayName: 'Download Approved Destroy Plan'
+    
+    # Install Terraform
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: ${{ parameters.terraformVersion }}
+    
+    # Re-init
+    - task: TerraformTask@5
+      displayName: 'Terraform Init (Destroy)'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        commandOptions: '-reconfigure -upgrade -input=false'
+        backendServiceArm: ${{ parameters.backendServiceConnection }}
+        backendAzureRmStorageAccountName: ${{ parameters.backendStorageAccount }}
+        backendAzureRmContainerName: ${{ parameters.backendContainerName }}
+        backendAzureRmKey: ${{ parameters.backendStateKey }}
+        workingDirectory: $(tfWorkingDir)
+    
+    # Fix permissions (if needed)
+    - task: Bash@3
+      displayName: 'Fix Provider Permissions'
+      inputs:
+        targetType: 'inline'
+        script: |
+          pwd
+          ls -lart *
+          cd $(tfWorkingDir)
+          pwd
+          ls -lart *
+          find $(tfWorkingDir)/.terraform/providers -type f -exec chmod +x {} \;
+    
+    # Execute the approved destroy plan
+    - task: TerraformTask@5
+      displayName: '⚠️ Terraform Destroy (Executing...)'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        commandOptions: '-input=false $(Pipeline.Workspace)/${{ variables.planArtifact }}/destroy.tfplan'
+        environmentServiceNameAzureRM: ${{ parameters.azureServiceConnection }}
+        workingDirectory: $(tfWorkingDir)

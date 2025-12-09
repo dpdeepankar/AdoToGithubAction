@@ -1,0 +1,24 @@
+# terraform-destroy-pipeline.yml
+trigger: none  # Manual trigger only - destroy kabhi auto nahi hona chahiye!
+
+resources:
+  pipelines:
+    - pipeline: buildPipeline
+      source: 'Terraform-build-pipeline'
+      trigger: none  # CRITICAL: Auto-trigger OFF for destroy
+
+# Template ko extend karo
+extends:
+  template: pipeline-templates/terraform-destroy.yml
+  parameters:
+    terraformVersion: 'latest'
+    vmImage: 'ubuntu-latest'
+    buildPipelineSource: 'Terraform-build-pipeline'
+    environmentPath: 'environments/dev01'
+    backendServiceConnection: 'ado-azure-conn'
+    backendStorageAccount: 'adoterraformstate'
+    backendContainerName: 'terraform'
+    backendStateKey: 'poc.tfstate'
+    azureServiceConnection: 'ado-azure-conn'
+    approvalTimeoutInMinutes: 1440    # 1 day
+    jobTimeoutInMinutes: 4320          # 3 days

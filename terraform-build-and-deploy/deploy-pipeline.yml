@@ -1,0 +1,35 @@
+# terraform-deploy-pipeline.yml
+trigger: none
+
+parameters: 
+ - name: test
+   type: string
+   displayName: test
+   default: dev
+   values: 
+    - "dlv"
+    - "dev"
+    - "uat"
+    - "prd"
+
+resources:
+  pipelines:
+    - pipeline: buildPipeline
+      source: 'Terraform-build-pipeline'
+      trigger: true
+
+# Template ko extend karo
+extends:
+  template: pipeline-templates/terraform-plan-apply.yml
+  parameters:
+    terraformVersion: 'latest'
+    vmImage: 'ubuntu-latest'
+    buildPipelineSource: 'Terraform-build-pipeline'
+    environmentPath: 'environments/dev01'
+    backendServiceConnection: 'ado-azure-conn'
+    backendStorageAccount: 'adoterraformstate'
+    backendContainerName: 'terraform'
+    backendStateKey: 'poc.tfstate'
+    azureServiceConnection: 'ado-azure-conn'
+    approvalTimeoutInMinutes: 1440    # 1 day
+    jobTimeoutInMinutes: 4320          # 3 days
