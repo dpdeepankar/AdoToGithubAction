@@ -1,17 +1,18 @@
-name: Terraform Build Pipeline
+# .github/workflows/build-pipeline.yml
+name: Terraform Build & Validate    # ← Name clear rakho
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
-      - 'terraform-build-and-deploy/environments/**'
-      - 'terraform-build-and-deploy/modules/**'
+      - 'terraform-build-and-deploy/**'
+  pull_request:
+    branches: [ main ]               # ← PR pe bhi dikhega
+  workflow_dispatch:                 # ← Manual run button bhi aa jayega
 
 jobs:
   build:
-    uses: ./.github/workflows/reusable-terraform-validate-build.yml
+    uses: ./.github/workflows/reusable-terraform-validate-build.yml@main
     with:
       working-directory-base: 'terraform-build-and-deploy'
       terraform-version: '1.9.0'
-      artifact-name: 'terraform-source'
