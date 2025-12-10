@@ -2,7 +2,7 @@
 # Purpose: Main workflow jo terraform-validate-build.yml ko call karta hai
 # Isko .github/workflows/ directory me rakho
 
-name: Terraform CI/CD Pipeline
+name: Terraform Build Pipeline
 
 on:
   push:
