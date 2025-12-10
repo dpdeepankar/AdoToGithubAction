@@ -2,7 +2,7 @@
 # Purpose: Validate aur package Terraform configurations
 # Usage: Is workflow ko apne main workflow me call karo using 'uses'
 
-name: Terraform Validate and Build
+name: Terraform Validate and Build template
 
 on:
   workflow_call:
