@@ -118,7 +118,7 @@ jobs:
         run: |
           echo "## ✅ Build Completed Successfully" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **RUN Number:** ${{ github.run_id }} >> $GITHUB_STEP_SUMMARY
+          echo "- **RUN Number:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Artifact Name:** terraform-source-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
