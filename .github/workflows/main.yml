@@ -40,7 +40,12 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false 
+        run: |
+          terraform init -input=false  \
+          -backend-config="use_azuread_auth=true" \
+          -backend-config="storage_account_name=terrafromtfstate" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=environments/dev01/terraform.tfstate"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
