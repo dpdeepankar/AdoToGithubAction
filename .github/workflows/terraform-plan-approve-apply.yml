@@ -90,8 +90,8 @@ jobs:
         with:
           name: terraform-source-artifact
           github-token: ${{ github.token }} # token with actions:read permissions on target repo
-          repository: dpdeepankar/AdoToGithubAction
-          run-id: 6
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.build_run_number }}
       
       - name: Azure Login (OIDC)
         uses: azure/login@v2
