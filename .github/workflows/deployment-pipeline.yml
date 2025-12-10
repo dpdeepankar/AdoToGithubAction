@@ -19,6 +19,10 @@ on:
         description: 'Build run number to deploy'
         required: true
         type: string
+      build_run_id:
+        description: 'Build run id to deploy'
+        required: true
+        type: string
   
   # # Optional: Auto-deploy after successful build
   # workflow_run:
@@ -63,6 +67,7 @@ jobs:
     with:
       terraform_version: '1.9.0'
       runs_on: 'ubuntu-latest'
+      build_run_id: ${{ github.event.inputs.build_run_id }}
       build_run_number: ${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
       environment_path: environments/${{ github.event.inputs.appenvironment || 'dev01' }}
       backend_storage_account: 'tfstatedev01'  # Change per environment
