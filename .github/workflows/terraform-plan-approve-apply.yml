@@ -93,7 +93,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: terraform-source-${{ inputs.build_run_number }}
-          github-token: ${{ secrets.GH_PAT }} # token with actions:read permissions on target repo
+          github-token: ${{ secrets.PAT }} # token with actions:read permissions on target repo
           repository: ${{ github.repository }}
           run-id: ${{ inputs.build_run_id }}
       
