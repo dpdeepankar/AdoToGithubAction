@@ -21,6 +21,10 @@ on:
         description: 'Build pipeline run number'
         required: true
         type: string
+      build_run_id:
+        description: 'Build pipeline run id'
+        required: true
+        type: string
       environment_path:
         description: 'Terraform environment path (e.g., environments/dev01)'
         required: true
@@ -88,10 +92,10 @@ jobs:
       # CRITICAL: Download artifact from build workflow
       - uses: actions/download-artifact@v5
         with:
-          name: terraform-source-artifact
+          name: terraform-source-${{ inputs.build_run_number }}
           github-token: ${{ github.token }} # token with actions:read permissions on target repo
           repository: ${{ github.repository }}
-          run-id: ${{ inputs.build_run_number }}
+          run-id: ${{ inputs.build_run_id }}
       
       - name: Azure Login (OIDC)
         uses: azure/login@v2
