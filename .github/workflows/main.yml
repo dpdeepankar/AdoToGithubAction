@@ -10,13 +10,13 @@ permissions:
 env: 
   TF_WORKING_DIR: terraform-build-and-deploy/environments/dev01
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}x
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 jobs:
   plan:
     name: Terraform plan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     concurrency:
       group: terraform-dev01
       cancel-in-progress: false
