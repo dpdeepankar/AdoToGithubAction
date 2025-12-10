@@ -2,7 +2,7 @@
 # Purpose: Plan, Manual Approval, aur Apply ke saath Terraform deployment
 # Usage: Is workflow ko apne deployment workflow me call karo
 
-name: Terraform Plan, Approve & Apply
+name: Terraform Plan, Approve & Apply template
 
 on:
   workflow_call:
