@@ -65,6 +65,9 @@ on:
       AZURE_SUBSCRIPTION_ID:
         description: 'Azure Subscription ID'
         required: true
+      PAT:
+        description: 'github path token'
+        required: true
       # Alternative: Use traditional credentials (not recommended)
       # AZURE_CREDENTIALS:
       #   description: 'Azure Service Principal JSON'
