@@ -17,7 +17,7 @@ env:
 jobs:
   plan:
     name: Terraform plan
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     concurrency:
       group: terraform-dev01
       cancel-in-progress: false
