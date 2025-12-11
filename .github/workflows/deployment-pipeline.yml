@@ -5,6 +5,8 @@
 name: Terraform Deployment Pipeline
 
 on:
+  repository_dispatch:
+    event_type: on-demand-test
   workflow_dispatch:
     inputs:
       environment:
