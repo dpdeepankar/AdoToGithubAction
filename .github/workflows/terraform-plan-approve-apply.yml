@@ -103,6 +103,13 @@ jobs:
           github-token: ${{ secrets.PAT }} # token with actions:read permissions on target repo
           repository: ${{ github.repository }}
           run-id: ${{ inputs.build_run_id }}
+
+      - name: Debug - list 
+        run: |
+          pwd
+          ls -lrta
+          ls -lrta */*
+          
       
       - name: Azure Login (OIDC)
         uses: azure/login@v2
