@@ -34,6 +34,8 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     outputs:
       source-artifact: terraform-source-${{ github.run_number }}
+      build_run_id: ${{ github.run_id }}
+      build_run_number: ${{ github.run_number }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
