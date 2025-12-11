@@ -69,15 +69,15 @@ jobs:
     with:
       terraform_version: '1.9.0'
       runs_on: 'ubuntu-latest'
-      build_run_id: ${{ github.event.inputs.build_run_id }}
-      build_run_number: ${{ github.event.inputs.build_run_number || github.event.workflow_run.run_number }}
+      build_run_id: ${{ github.event.inputs.build_run_id || github.event.client_payload.build_run_id }}
+      build_run_number: ${{ github.event.inputs.build_run_number || github.event.client_payload.build_run_number || github.event.workflow_run.run_number }}
       environment_path: environments/${{ github.event.inputs.appenvironment || 'dev01' }}
       backend_storage_account: 'tfstatedev01'  # Change per environment
       backend_container_name: 'terraform'
       backend_state_key: ${{ github.event.inputs.environment || 'dev01' }}.tfstate
       backend_resource_group: 'rg-terraform-state-dev'  # Change per environment
       artifact_name_prefix: 'terraform-source'
-      environment_name: ${{ github.event.inputs.environment || 'dev01' }}  # GitHub Environment name
+      environment_name: ${{ github.event.inputs.environment || github.event.client_payload.environment  || 'dev01' }}  # GitHub Environment name
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
