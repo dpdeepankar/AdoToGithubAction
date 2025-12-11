@@ -40,3 +40,19 @@ jobs:
       source-artifact: terraform-source-${{ needs.build-and-validate.outputs.run-number || github.run_number }}
     steps:
       - run: echo "Artifact ready for downstream"
+
+  trigger-deployment-workflow:
+    needs: build-and-validate
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: trigger-deployment-workflow
+      run: |
+        gh api \
+        --method POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        /repos/OWNER/REPO/dispatches \
+        -f 'event_type=on-demand-test' \
+        -F "client_payload[environment]=dev01" \
+        -F "client_payload[build_run_number]=${{ needs.build-and-validate.outputs.run-number }}" \
+        -F "client_payload[build_run_id]=${{ needs.build-and-validate.outputs.run-id }}"
