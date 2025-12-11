@@ -27,6 +27,13 @@ on:
         required: false
         type: string
         default: 'terraform-source'
+    outputs:
+      build_run_id: 
+        description: "Build run id (github.run_id)"
+        value: ${{ jobs.validate-and-package.outputs.build_run_id }}
+      build_run_number:
+        description: "Build run number (github.run_number)"
+        value: ${{ jobs.validate-and-package.outputs.build_run_number }}
 
 jobs:
   validate-and-package:
