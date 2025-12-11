@@ -82,10 +82,10 @@ jobs:
       build_run_id: ${{ github.event.inputs.build_run_id || github.event.client_payload.build_run_id }}
       build_run_number: ${{ github.event.inputs.build_run_number || github.event.client_payload.build_run_number || github.event.workflow_run.run_number }}
       environment_path: environments/${{ github.event.inputs.appenvironment || 'dev01' }}
-      backend_storage_account: 'tfstatedev01'  # Change per environment
-      backend_container_name: 'terraform'
-      backend_state_key: ${{ github.event.inputs.environment || 'dev01' }}.tfstate
-      backend_resource_group: 'rg-terraform-state-dev'  # Change per environment
+      backend_storage_account: 'terrafromtfstate'  # Change per environment
+      backend_container_name: 'tfstate'
+      backend_state_key: ${{ github.event.inputs.environment || github.event.client_payload.environment }}.tfstate
+      backend_resource_group: 'devopsmi-rg'  # Change per environment
       artifact_name_prefix: 'terraform-source'
       environment_name: ${{ github.event.inputs.environment || github.event.client_payload.environment  || 'dev01' }}  # GitHub Environment name
     secrets:
