@@ -49,13 +49,33 @@ jobs:
   trigger-deployment-workflow:
     needs: build-and-validate
     runs-on: 'ubuntu-latest'
+    env:
+      BUILD_RUN_NUMBER: ${{ needs.build-and-validate.outputs.build_run_number }}   # <-- match your output name
+      BUILD_RUN_ID:     ${{ needs.build-and-validate.outputs.build_run_id }}
+      REPO:             ${{ github.repository }}
+      GH_PAT:           ${{ secrets.GH_PAT }}
     steps:
     - name: trigger-deployment-workflow
       run: |
-        curl -L \
-        -X POST \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        https://api.github.com/repos/${{ github.repository }}/dispatches \
-        -d '{"event_type":"on-demand-test","client_payload":{"build_run_number":"${{  needs.build-and-validate.outputs.run-number }}" ,"build_run_id":"${{ needs.build-and-validate.outputs.run-id }}", "environment":"dev01"}}'
+        echo "Will trigger deployment for build_run_number=$BUILD_RUN_NUMBER build_run_id=$BUILD_RUN_ID"
+
+        payload=$(cat <<EOF
+        {"event_type":"on-demand-test","client_payload":{"build_run_number":"$BUILD_RUN_NUMBER","build_run_id":"$BUILD_RUN_ID","environment":"dev01"}}
+        EOF
+        )
+
+        # Debug - see payload in logs (mask token)
+        echo "Payload: $payload"
+
+        resp=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GH_PAT" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/$REPO/dispatches" \
+          -d "$payload")
+
+        echo "Repo dispatch HTTP status: $resp"
+        if [ "$resp" != "204" ]; then
+          echo "::error::Repo dispatch failed with HTTP $resp"
+        exit 1
+        fi
