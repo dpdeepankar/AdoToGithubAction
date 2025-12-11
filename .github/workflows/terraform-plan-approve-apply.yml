@@ -177,37 +177,24 @@ jobs:
             });
 
   # ===============================================================
-  # JOB 2: Manual Approval (using GitHub Environments)
-  # ===============================================================
-  await-approval:
-    name: Wait for Manual Approval
-    needs: terraform-plan
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment_name }}  # This triggers approval
-    
-    steps:
-      - name: Approval Gate Passed
-        run: |
-          echo "✅ Manual approval received for build ${{ inputs.build_run_number }}"
-          echo "Plan artifact: ${{ env.PLAN_ARTIFACT }}"
-
-  # ===============================================================
-  # JOB 3: Terraform Apply
+  # JOB 2: Terraform Apply
   # ===============================================================
   terraform-apply:
     name: Apply Terraform Changes
-    needs: await-approval
+    needs: terraform-plan
     runs-on: ${{ inputs.runs_on }}
+    environment: dev
     permissions:
       id-token: write  # Required for OIDC
       contents: read
     
     steps:
-      - name: Download Terraform Source
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: ${{ env.SOURCE_ARTIFACT }}
-          path: ${{ github.workspace }}
+          name: terraform-source-${{ inputs.build_run_number }}
+          github-token: ${{ secrets.PAT }} # token with actions:read permissions on target repo
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.build_run_id }}
       
       - name: Download Approved Plan
         uses: actions/download-artifact@v4
