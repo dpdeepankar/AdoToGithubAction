@@ -77,6 +77,10 @@ env:
   SOURCE_ARTIFACT: ${{ inputs.artifact_name_prefix }}-latest
   PLAN_ARTIFACT: terraform-plan-${{ inputs.build_run_number }}
   TF_WORKING_DIR: ${{ github.workspace }}/${{ inputs.environment_path }}
+  ARM_USE_OIDC: true
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 jobs:
   # ===============================================================
