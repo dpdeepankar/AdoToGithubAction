@@ -41,6 +41,15 @@ permissions:
   actions: read 
   
 jobs:
+ display_env:
+    runs-on: 'ubuntu-latest'
+    name: display environment vars
+    steps:
+    - name: show environment variable
+      run: |
+        echo "Runid: ${{ github.event.inputs.build_run_id || github.event.client_payload.build_run_id }}"
+        echo "Build Numebr: ${{ github.event.inputs.build_run_number || github.event.client_payload.build_run_number || github.event.workflow_run.run_number }}"
+        echo "environment: ${{ github.event.inputs.environment || github.event.client_payload.environment }}  # GitHub Environment name
   # Download build artifact from previous workflow
   # download-build:
   #   name: Download Build Artifact
@@ -63,7 +72,7 @@ jobs:
   #         path: ./terraform-source
 
   # Call the reusable deployment workflow
-  deploy:
+ deploy:
     name: Deploy to ${{ github.event.inputs.appenvironment || 'dev01' }}
     uses: ./.github/workflows/terraform-plan-approve-apply.yml
     with:
