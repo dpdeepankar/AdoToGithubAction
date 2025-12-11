@@ -55,4 +55,4 @@ jobs:
         -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         https://api.github.com/repos/${{ github.repository }}/dispatches \
-        -d '{"event_type":"on-demand-test","client_payload":{"build_run_number":${{  needs.build-and-validate.outputs.run-number }} ,"build_run_id":${{ needs.build-and-validate.outputs.run-id }}, "environment":"dev01"}}'
+        -d '{"event_type":"on-demand-test","client_payload":{"build_run_number":"${{  needs.build-and-validate.outputs.run-number }}" ,"build_run_id":"${{ needs.build-and-validate.outputs.run-id }}", "environment":"dev01"}}'
