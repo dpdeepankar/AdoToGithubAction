@@ -41,7 +41,10 @@ jobs:
     outputs:
       source-artifact: terraform-source-${{ needs.build-and-validate.outputs.run-number || github.run_number }}
     steps:
-      - run: echo "Artifact ready for downstream"
+      - run: |
+          echo "build_run_id: ${{ needs.build-and-validate.outputs.build_run_id }}"
+          echo "build_run_number: ${{ needs.build-and-validate.outputs.build_run_number }}"
+      
 
   trigger-deployment-workflow:
     needs: build-and-validate
