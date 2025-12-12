@@ -77,7 +77,7 @@ jobs:
     uses: ./.github/workflows/terraform-plan-approve-apply.yml
     needs: display_env
     with:
-      terraform_version: '1.9.0'
+      terraform_version: '1.14.0'
       runs_on: 'ubuntu-latest'
       build_run_id: ${{ github.event.inputs.build_run_id || github.event.client_payload.build_run_id }}
       build_run_number: ${{ github.event.inputs.build_run_number || github.event.client_payload.build_run_number || github.event.workflow_run.run_number }}
