@@ -129,6 +129,7 @@ jobs:
   plan:
     name: Terraform plan
     runs-on: ubuntu-latest
+    needs: validate-and-package
     concurrency:
       group: terraform-dev01
       cancel-in-progress: false
