@@ -49,6 +49,7 @@ jobs:
         run: terraform plan -input=false -no-color -out=tfplan
 
       - name: Add Terraform plan to summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "## Terraform Plan ${{ github.runid }}" >> $GITHUB_STEP_SUMMARY
           terraform show tfplan >> $GITHUB_STEP_SUMMARY
