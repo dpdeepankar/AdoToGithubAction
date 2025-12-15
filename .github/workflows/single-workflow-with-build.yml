@@ -1,0 +1,216 @@
+name: Terraform single workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      terraform_version:
+        description: 'Terraform version to install'
+        required: false
+        type: string
+        default: '1.9.0'
+      runs_on:
+        description: 'Runner to use (ubuntu-latest, etc.)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+
+permissions:
+  id-token: write
+  contents: read
+
+env: 
+  TF_WORKING_DIR: terraform-build-and-deploy/environments/dev01
+  BASE_DIR: terraform-build-and-deploy
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: true
+
+jobs:
+  validate-and-package:
+    name: Validate and Package Terraform
+    runs-on: ${{ inputs.runs_on }}
+    outputs:
+      source-artifact: terraform-source-${{ github.run_id }}
+      build_run_id: ${{ github.run_id }}
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+      
+      - name: Validate Terraform Syntax
+        shell: bash
+        run: |
+          set -uo pipefail
+          
+          WORKING_DIR_BASE="${{ env.BASE_DIR }}"
+          echo "Working Directory Base: $WORKING_DIR_BASE"
+          
+          if [[ -z "$WORKING_DIR_BASE" ]]; then
+            echo "::error::Working Directory Base not set"
+            exit 2
+          fi
+          
+          # Resolve absolute path
+          WORKING_DIR_BASE="$(cd "$WORKING_DIR_BASE" && pwd)"
+          
+          # Find all directories containing .tf files
+          mapfile -t tf_dirs < <(find "$WORKING_DIR_BASE" -type f -name '*.tf' -printf '%h\n' | sort -u)
+          
+          if [[ ${#tf_dirs[@]} -eq 0 ]]; then
+            echo "No Terraform directories found under: $WORKING_DIR_BASE"
+            exit 0
+          fi
+          
+          # Validate each Terraform directory
+          for dir in "${tf_dirs[@]}"; do
+            echo "Validating: $dir"
+            (
+              cd "$dir" || exit 1
+              
+              # Initialize without backend
+              terraform init -backend=false
+              init_status=$?
+              
+              if [[ $init_status -ne 0 ]]; then
+                echo "::error::Terraform init failed for $dir"
+                exit 1
+              fi
+              
+              # Validate configuration
+              terraform validate
+              validate_status=$?
+              
+              if [[ $validate_status -ne 0 ]]; then
+                echo "::error::Validation failed for $dir"
+                exit 1
+              fi
+            )
+            
+            if [[ $? -ne 0 ]]; then
+              exit 1
+            fi
+          done
+          
+          echo "✅ All Terraform validations passed"
+      
+      - name: Set output 
+        id: set-output
+        run: |
+          ARTIFACT_NAME="terraform-source-${{ github.run_id }}"
+          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "build_run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
+          echo "build_run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
+          echo "📦 Artifact Name: $ARTIFACT_NAME"
+      
+      - name: Upload Terraform Source Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-source-${{ github.run_id }}
+          path: /
+          retention-days: 3  # 3 months retention
+          if-no-files-found: error
+      
+      - name: Build Summary
+        run: |
+          echo "## ✅ Build Completed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Name:** terraform-source-${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Ready for deployment!" >> $GITHUB_STEP_SUMMARY
+
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-dev01
+      cancel-in-progress: false
+
+    steps:
+      - name: Download Terraform Source Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.validate-and-package.outputs.source-artifact }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.0
+
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -input=false  \
+          -backend-config="use_azuread_auth=true" \
+          -backend-config="storage_account_name=terrafromtfstate" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=environments/dev01/terraform.tfstate"
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Add Terraform plan to summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "## Terraform Plan ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          terraform show -no-color tfplan > tfplan.txt
+          cat tfplan.txt >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform Source Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.run_id }}
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 3  # 3 months retention
+          if-no-files-found: error
+
+
+  apply:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+    needs: plan
+    if: github.event_name == 'workflow_dispatch'
+    concurrency:
+      group: terraform-dev01
+      cancel-in-progress: false
+    steps:
+      - name: Download Terraform Source Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.validate-and-package.outputs.source-artifact }}
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ github.run_id }}
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -input=false  \
+          -backend-config="use_azuread_auth=true" \
+          -backend-config="storage_account_name=terrafromtfstate" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=environments/dev01/terraform.tfstate"
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -no-color tfplan
