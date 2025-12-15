@@ -98,15 +98,6 @@ jobs:
           
           echo "✅ All Terraform validations passed"
       
-      - name: Set output 
-        id: set-output
-        run: |
-          ARTIFACT_NAME="terraform-source-${{ github.run_id }}"
-          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "build_run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
-          echo "build_run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
-          echo "📦 Artifact Name: $ARTIFACT_NAME"
-      
       - name: Upload Terraform Source Artifact
         uses: actions/upload-artifact@v4
         with:

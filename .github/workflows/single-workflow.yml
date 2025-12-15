@@ -1,4 +1,6 @@
-name: Terraform single workflow
+name: Terraform single workflow 
+
+run-name: Terraform Single Workflow - ${{ github.run_number}}
 
 on:
   workflow_dispatch:
