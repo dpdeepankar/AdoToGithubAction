@@ -111,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-source-${{ github.run_id }}
-          path: /
+          path: ${{ github.workspace }}
           retention-days: 3  # 3 months retention
           if-no-files-found: error
       
