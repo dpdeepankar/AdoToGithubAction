@@ -52,4 +52,5 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "## Terraform Plan ${{ github.runid }}" >> $GITHUB_STEP_SUMMARY
-          terraform show tfplan >> $GITHUB_STEP_SUMMARY
+          terraform show tfplan > tfplan.txt
+          cat tfplan.txt >> $GITHUB_STEP_SUMMARY
