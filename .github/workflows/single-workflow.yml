@@ -67,6 +67,8 @@ jobs:
   apply:
     name: Terraform apply
     runs-on: ubuntu-latest
+    environment:
+      name: dev01
     needs: plan
     if: github.event_name == 'workflow_dispatch'
     concurrency:
