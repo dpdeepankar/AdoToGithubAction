@@ -1,4 +1,4 @@
-name: Terraform single workflow
+name: Terraform single workflow Build
 
 on:
   workflow_dispatch:
@@ -193,7 +193,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.validate-and-package.outputs.source-artifact }}
-          
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
