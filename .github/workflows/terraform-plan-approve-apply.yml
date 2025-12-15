@@ -110,7 +110,7 @@ jobs:
           workflow: build-pipeline.yml
           workflow_conclusion: success
           run_id: ${{ inputs.build_run_id }}
-          name: terraform-source-$${{ inputs.build_run_id }}
+          name: terraform-source-${{ inputs.build_run_number}}
           repo: ${{ github.repository }}
 
       - name: Debug - list 
