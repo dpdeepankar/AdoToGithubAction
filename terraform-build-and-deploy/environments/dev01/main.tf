@@ -1,6 +1,6 @@
 module "resourceGroup" {
     source = "../../modules/resourceGroup"
 
-    resourceGroupName = "testrg1"
+    resourceGroupName = "testrg2"
     location = "centralindia"
 }
