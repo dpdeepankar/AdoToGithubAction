@@ -41,9 +41,9 @@ jobs:
         echo "backendKey=$(jq -r '.backendKey' config.json)" >> $GITHUB_OUTPUT
         echo "workingDirectory=$(jq -r '.workingDirectory' config.json)" >> $GITHUB_OUTPUT
         echo "workflowEnvironment=$(jq -r '.workflowEnvironment' config.json)" >> $GITHUB_OUTPUT
-        echo "azureClientId"=$(jq -r '.azureClientId' config.json)" >> $GITHUB_OUTPUT
-        echo "azureTenantId"=$(jq -r '.azureTenantId' config.json)" >> $GITHUB_OUTPUT
-        echo "azureSubscriptionId"=$(jq -r '.azureSubscriptionId' config.json)" >> $GITHUB_OUTPUT
+        echo "azureClientId=$(jq -r '.azureClientId' config.json)" >> $GITHUB_OUTPUT
+        echo "azureTenantId=$(jq -r '.azureTenantId' config.json)" >> $GITHUB_OUTPUT
+        echo "azureSubscriptionId=$(jq -r '.azureSubscriptionId' config.json)" >> $GITHUB_OUTPUT
 
   deploy:   
     needs: prepare
