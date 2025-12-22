@@ -5,7 +5,7 @@ run-name: ${{ github.ref_name }}-${{ github.run_id }}
 on:
   workflow_dispatch:
     inputs:
-      targetEnvironment: 
+      appEnvironment: 
         description: 'target environment to build'
         required: true
         type: choice
@@ -13,7 +13,7 @@ on:
          - dev01
          - dev02
          - dev03
-      appEnvironment:
+      targetEnvironment:
         description: 'app environment'
         required: true
         type: choice
@@ -22,6 +22,13 @@ on:
          - dlv
          - acc
          - prod
+
+env:
+  BACKEND_STORAGE_ACCOUNT: "abcd"
+  BACKEND_CONTAINER_NAME: "terraform"
+  BACKEND_KEY: "terraform.tfstate"
+  BACKEND_RESOURCE_GROUP: "rg1"
+  WORKING_DIR: "terraform-build-and-deploy/environments/dev01"
 
 jobs:
   build:
@@ -34,6 +41,26 @@ jobs:
        uses: actions/upload-artifact@v4
        with:
          name: drop
+         path: ${{ github.workspace }}
+
+     - name: Create config
+       run: |
+        cat <<EOF > config.json
+        {
+            "targetEnvironment": "${{ inputs.targetEnvironment }}",
+            "appEnvironment" : "${{ inputs.appEnvironment }}",
+            "backendStorageAccount" : "${{ env.BACKED_STORAGE_ACCOUNT }}",
+            "backendContainerName": "${{ env.BACKEND_CONTAINER_NAME }}",
+            "backendResourceGroup": "${{ env.BACKEND_RESOURCE_GROUP }}",
+            "backendKey": "${{ env.BACKEND_KEY }}"
+        }
+        EOF
+
+     - name: Upload config as artifact
+       uses: actions/upload-artifact@v4
+       with:
+         name: config.json
+         path: config.json
 
      - name: Add build summary
        run: |
