@@ -1,0 +1,45 @@
+name: Terraform Build Pipeline
+
+run-name: ${{ github.ref_name }}-${{ github.run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      targetEnvironment: 
+        description: 'target environment to build'
+        required: true
+        type: choice
+        options:
+         - dev01
+         - dev02
+         - dev03
+      appEnvironment:
+        description: 'app environment'
+        required: true
+        type: choice
+        options:
+         - dev
+         - dlv
+         - acc
+         - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+     - name: checkout self
+       uses: actions/checkout@v4
+
+     - name: Upload artifact
+       uses: actions/upload-artifact@v4
+       with:
+         name: drop
+
+     - name: Add build summary
+       run: |
+         echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+         echo "Run ID: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+         echo "Branch: ${{ gitub.ref_name }}" >> $GITHUB_STEP_SUMMARY
+         echo "commit sha: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY 
+
+ 
