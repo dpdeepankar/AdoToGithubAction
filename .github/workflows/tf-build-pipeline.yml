@@ -72,7 +72,7 @@ jobs:
        run: |
          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
          echo "Run ID: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-         echo "Branch: ${{ gitub.ref_name }}" >> $GITHUB_STEP_SUMMARY
+         echo "Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
          echo "commit sha: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY 
 
  
