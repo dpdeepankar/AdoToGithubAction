@@ -34,6 +34,15 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      targetEnvironment: "${{ inputs.targetEnvironment }}"
+      backendStorageAccount : "${{ env.BACKED_STORAGE_ACCOUNT }}"
+      backendContainerName: "${{ env.BACKEND_CONTAINER_NAME }}"
+      backendResourceGroup: "${{ env.BACKEND_RESOURCE_GROUP }}"
+      backendKey: "${{ env.BACKEND_KEY }}"
+      workflowEnvironment: "${{ env.WORKFLOW_ENVIRONMENT }}"
+      workingDirectory: "${{ env.WORKING_DIR }}"
+      
     steps:
      - name: checkout self
        uses: actions/checkout@v4
