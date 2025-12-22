@@ -1,0 +1,54 @@
+name: Terraform Deployment Pipeline wrapper
+
+on:
+  workflow_run:
+    workflows: ["Terraform Build Pipeline"]
+    types: ["completed"]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      targetEnvironment: ${{ steps.parseConfig.outputs.targetEnvironment }}
+      appEnvironment: ${{ steps.parseConfig.outputs.appEnvironment }}
+      backendStorageAccount: ${{ steps.parseConfig.outputs.backendStorageAccount }}
+      backendContainerName: ${{ steps.parseConfig.outputs.backendContainerName }}
+      backendResourceGroup: ${{ steps.parseConfig.outputs.backendResourceGroup }}
+      backendKey: ${{ steps.parseConfig.outputs.backendKey }}
+      workingDirectory: ${{ steps.parseConfig.outputs.workingDirectory }}
+      workflowEnvironment: ${{ steps.parseConfig.output.workflowEnvironment }}
+      
+    steps:
+     - name: Download config
+       uses: dawidd6/download-artifact-action@v11
+       with:
+         workflow: tf-build-pipeline.yml
+         name: config.json
+         run_id: ${{ github.event.workflow_run.id }}
+
+     - name: parse config
+       id: parseConfig
+       run: |
+        echo "targetEnvironment=$(jq -r '.targetEnvironment' config.json)" >> $GITHUB_OUTPUT
+        echo "appEnvironment=$(jq -r '.appEnvironment' config.json)" >> $GITHUB_OUTPUT
+        echo "backendStorageAccount=$(jq -r '.backendStorageAccount' config.json)" >> $GITHUB_OUTPUT
+        echo "backendContainerName=$(jq -r '.backendContainerName' config.json)" >> $GITHUB_OUTPUT
+        echo "backendResourceGroup=$(jq -r '.backendResourceGroup' config.json)" >> $GITHUB_OUTPUT
+        echo "backendKey=$(jq -r '.backendKey' config.json)" >> $GITHUB_OUTPUT
+        echo "workingDirectory=$(jq -r '.workingDirectory' config.json)" >> $GITHUB_OUTPUT
+        echo "workflowEnvironment=$(jq -r '.workflowEnvironment' config.json)" >> $GITHUB_OUTPUT
+
+  deploy:   
+    needs: prepare
+    uses: ./.github/workflows/terraform-plan-approve-apply.yml
+    with:
+      build_run_id: ${{ github.event.workflow_run.id }}
+      working_dir: ${{ needs.prepare.outputs.workingDirectory }}
+      backend_storage_account: ${{ needs.prepare.outputs.backendStorageAccount }}
+      backend_container_name: ${{ needs.prepare.outputs.backendContainerName }}
+      backend_resource_group: ${{ needs.prepare.outputs.backendResourceGroup }}
+      backend_state_key: ${{ needs.prepare.outputs.backendKey }}
+      workflow_environment: ${{ needs.prepare.outputs.workflowEnvironment }}
+    
+         
+        
