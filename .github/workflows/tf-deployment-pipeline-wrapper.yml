@@ -17,6 +17,10 @@ jobs:
       backendKey: ${{ steps.parseConfig.outputs.backendKey }}
       workingDirectory: ${{ steps.parseConfig.outputs.workingDirectory }}
       workflowEnvironment: ${{ steps.parseConfig.output.workflowEnvironment }}
+      azureClientId: ${{ steps.parseConfig.output.azureClientId }}
+      azureTenantId: ${{ steps.parseConfig.output.azureTenantId }}
+      azureSubscriptionId: ${{ steps.parseConfig.output.azureSubscriptionId }}
+      
       
     steps:
      - name: Download config
@@ -37,6 +41,9 @@ jobs:
         echo "backendKey=$(jq -r '.backendKey' config.json)" >> $GITHUB_OUTPUT
         echo "workingDirectory=$(jq -r '.workingDirectory' config.json)" >> $GITHUB_OUTPUT
         echo "workflowEnvironment=$(jq -r '.workflowEnvironment' config.json)" >> $GITHUB_OUTPUT
+        echo "azureClientId"=$(jq -r '.azureClientId' config.json)" >> $GITHUB_OUTPUT
+        echo "azureTenantId"=$(jq -r '.azureTenantId' config.json)" >> $GITHUB_OUTPUT
+        echo "azureSubscriptionId"=$(jq -r '.azureSubscriptionId' config.json)" >> $GITHUB_OUTPUT
 
   deploy:   
     needs: prepare
@@ -50,9 +57,9 @@ jobs:
       backend_state_key: ${{ needs.prepare.outputs.backendKey }}
       workflow_environment: ${{ needs.prepare.outputs.workflowEnvironment }}
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_CLIENT_ID: ${{ needs.prepare.outputs.azureClientId }}
+      AZURE_TENANT_ID: ${{ needs.prepare.outputs.azureTenantId }}
+      AZURE_SUBSCRIPTION_ID: ${{ needs.prepare.outputs.azureSubscriptionId }}
     
          
         
