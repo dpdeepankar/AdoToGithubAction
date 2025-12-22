@@ -52,7 +52,8 @@ jobs:
             "backendStorageAccount" : "${{ env.BACKED_STORAGE_ACCOUNT }}",
             "backendContainerName": "${{ env.BACKEND_CONTAINER_NAME }}",
             "backendResourceGroup": "${{ env.BACKEND_RESOURCE_GROUP }}",
-            "backendKey": "${{ env.BACKEND_KEY }}"
+            "backendKey": "${{ env.BACKEND_KEY }}",
+            "workflowEnvironment": "poc"
         }
         EOF
 
