@@ -5,14 +5,14 @@ run-name: ${{ github.ref_name }}-${{ github.run_id }}
 on:
   workflow_dispatch:
     inputs:
-      appEnvironment: 
-        description: 'target environment to build'
-        required: true
-        type: choice
-        options:
-         - dev01
-         - dev02
-         - dev03
+      # appEnvironment: 
+      #   description: 'target environment to build'
+      #   required: true
+      #   type: choice
+      #   options:
+      #    - dev01
+      #    - dev02
+      #    - dev03
       targetEnvironment:
         description: 'app environment'
         required: true
@@ -29,6 +29,7 @@ env:
   BACKEND_KEY: "terraform.tfstate"
   BACKEND_RESOURCE_GROUP: "rg1"
   WORKING_DIR: "terraform-build-and-deploy/environments/dev01"
+  WORKFLOW_ENVIRONMENT: 'poc'
 
 jobs:
   build:
@@ -48,12 +49,12 @@ jobs:
         cat <<EOF > config.json
         {
             "targetEnvironment": "${{ inputs.targetEnvironment }}",
-            "appEnvironment" : "${{ inputs.appEnvironment }}",
             "backendStorageAccount" : "${{ env.BACKED_STORAGE_ACCOUNT }}",
             "backendContainerName": "${{ env.BACKEND_CONTAINER_NAME }}",
             "backendResourceGroup": "${{ env.BACKEND_RESOURCE_GROUP }}",
             "backendKey": "${{ env.BACKEND_KEY }}",
-            "workflowEnvironment": "poc"
+            "workflowEnvironment": "${{ env.WORKFLOW_ENVIRONMENT }}",
+            "workingDirectory": "${{ env.WORKING_DIR }}
         }
         EOF
 
