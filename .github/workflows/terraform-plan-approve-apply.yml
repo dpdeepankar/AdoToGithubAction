@@ -7,25 +7,11 @@ name: Terraform Plan, Approve & Apply template
 on:
   workflow_call:
     inputs:
-      terraform_version:
-        description: 'Terraform version'
-        required: false
-        type: string
-        default: 'latest'
-      runs_on:
-        description: 'Runner to use'
-        required: false
-        type: string
-        default: 'ubuntu-latest'
-      build_run_number:
-        description: 'Build pipeline run number'
-        required: true
-        type: string
       build_run_id:
         description: 'Build pipeline run id'
         required: true
         type: string
-      environment_path:
+      working_dir:
         description: 'Terraform environment path (e.g., environments/dev01)'
         required: true
         type: string
@@ -46,12 +32,7 @@ on:
         description: 'Resource group for backend storage'
         required: true
         type: string
-      artifact_name_prefix:
-        description: 'Artifact name prefix'
-        required: false
-        type: string
-        default: 'terraform-source'
-      environment_name:
+      workflow_environment:
         description: 'GitHub Environment for approval (e.g., production)'
         required: true
         type: string
