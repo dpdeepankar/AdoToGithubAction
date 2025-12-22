@@ -49,6 +49,10 @@ jobs:
       backend_resource_group: ${{ needs.prepare.outputs.backendResourceGroup }}
       backend_state_key: ${{ needs.prepare.outputs.backendKey }}
       workflow_environment: ${{ needs.prepare.outputs.workflowEnvironment }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     
          
         
