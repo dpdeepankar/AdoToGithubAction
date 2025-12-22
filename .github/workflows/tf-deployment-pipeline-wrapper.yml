@@ -24,7 +24,7 @@ jobs:
       
     steps:
      - name: Download config
-       uses: dawidd6/download-artifact-action@v11
+       uses: dawidd6/action-download-artifact@v11
        with:
          workflow: tf-build-pipeline.yml
          name: config.json
