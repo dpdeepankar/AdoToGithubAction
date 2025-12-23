@@ -34,18 +34,19 @@ jobs:
        id: parseConfig
        run: |
         ls -lart
-        echo "targetEnvironment=$(jq -r '.targetEnvironment' config.json)" >> $GITHUB_OUTPUT
-        echo "appEnvironment=$(jq -r '.appEnvironment' config.json)" >> $GITHUB_OUTPUT
-        echo "backendStorageAccount=$(jq -r '.backendStorageAccount' config.json)" >> $GITHUB_OUTPUT
-        echo "backendContainerName=$(jq -r '.backendContainerName' config.json)" >> $GITHUB_OUTPUT
-        echo "backendResourceGroup=$(jq -r '.backendResourceGroup' config.json)" >> $GITHUB_OUTPUT
-        echo "backendKey=$(jq -r '.backendKey' config.json)" >> $GITHUB_OUTPUT
-        echo "workingDirectory=$(jq -r '.workingDirectory' config.json)" >> $GITHUB_OUTPUT
-        echo "workflowEnvironment=$(jq -r '.workflowEnvironment' config.json)" >> $GITHUB_OUTPUT
-        echo "azureClientId=$(jq -r '.azureClientId' config.json)" >> $GITHUB_OUTPUT
-        echo "azureTenantId=$(jq -r '.azureTenantId' config.json)" >> $GITHUB_OUTPUT
-        echo "azureSubscriptionId=$(jq -r '.azureSubscriptionId' config.json)" >> $GITHUB_OUTPUT
-        echo $GITHUB_OUTPUT
+        echo "targetEnvironment=$(jq -r '.targetEnvironment' config.json)" >> "$GITHUB_OUTPUT"
+        echo "appEnvironment=$(jq -r '.appEnvironment' config.json)" >> "$GITHUB_OUTPUT"
+        echo "backendStorageAccount=$(jq -r '.backendStorageAccount' config.json)" >> "$GITHUB_OUTPUT"
+        echo "backendContainerName=$(jq -r '.backendContainerName' config.json)" >> "$GITHUB_OUTPUT"
+        echo "backendResourceGroup=$(jq -r '.backendResourceGroup' config.json)" >> "$GITHUB_OUTPUT"
+        echo "backendKey=$(jq -r '.backendKey' config.json)" >> "$GITHUB_OUTPUT"
+        echo "workingDirectory=$(jq -r '.workingDirectory' config.json)" >> "$GITHUB_OUTPUT"
+        echo "workflowEnvironment=$(jq -r '.workflowEnvironment' config.json)" >> "$GITHUB_OUTPUT"
+        echo "azureClientId=$(jq -r '.azureClientId' config.json)" >> "$GITHUB_OUTPUT"
+        echo "azureTenantId=$(jq -r '.azureTenantId' config.json)" >> "$GITHUB_OUTPUT"
+        echo "azureSubscriptionId=$(jq -r '.azureSubscriptionId' config.json)" >> "$GITHUB_OUTPUT"
+        echo "$GITHUB_OUTPUT"
+        cat "$GITHUB_OUTPUT"
 
   deploy:   
     needs: prepare
