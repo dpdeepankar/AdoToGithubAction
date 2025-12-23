@@ -33,6 +33,7 @@ jobs:
      - name: parse config
        id: parseConfig
        run: |
+        ls -lart
         echo "targetEnvironment=$(jq -r '.targetEnvironment' config.json)" >> $GITHUB_OUTPUT
         echo "appEnvironment=$(jq -r '.appEnvironment' config.json)" >> $GITHUB_OUTPUT
         echo "backendStorageAccount=$(jq -r '.backendStorageAccount' config.json)" >> $GITHUB_OUTPUT
