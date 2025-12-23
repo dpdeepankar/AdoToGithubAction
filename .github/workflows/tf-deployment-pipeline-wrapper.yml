@@ -16,10 +16,10 @@ jobs:
       backendResourceGroup: ${{ steps.parseConfig.outputs.backendResourceGroup }}
       backendKey: ${{ steps.parseConfig.outputs.backendKey }}
       workingDirectory: ${{ steps.parseConfig.outputs.workingDirectory }}
-      workflowEnvironment: ${{ steps.parseConfig.output.workflowEnvironment }}
-      azureClientId: ${{ steps.parseConfig.output.azureClientId }}
-      azureTenantId: ${{ steps.parseConfig.output.azureTenantId }}
-      azureSubscriptionId: ${{ steps.parseConfig.output.azureSubscriptionId }}
+      workflowEnvironment: ${{ steps.parseConfig.outputs.workflowEnvironment }}
+      azureClientId: ${{ steps.parseConfig.outputs.azureClientId }}
+      azureTenantId: ${{ steps.parseConfig.outputs.azureTenantId }}
+      azureSubscriptionId: ${{ steps.parseConfig.outputs.azureSubscriptionId }}
       
       
     steps:
