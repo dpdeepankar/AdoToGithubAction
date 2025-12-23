@@ -36,16 +36,18 @@ on:
         description: 'GitHub Environment for approval (e.g., production)'
         required: true
         type: string
-    secrets:
       AZURE_CLIENT_ID:
         description: 'Azure Client ID for OIDC'
         required: true
+        type: string
       AZURE_TENANT_ID:
         description: 'Azure Tenant ID'
         required: true
+        type: string
       AZURE_SUBSCRIPTION_ID:
         description: 'Azure Subscription ID'
         required: true
+        type: string
       # Alternative: Use traditional credentials (not recommended)
       # AZURE_CREDENTIALS:
       #   description: 'Azure Service Principal JSON'
@@ -54,9 +56,9 @@ on:
 env:
   TF_WORKING_DIR: ${{ inputs.working_directory }}
   ARM_USE_OIDC: true
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_CLIENT_ID: ${{ inputs.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ inputs.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ inputs.AZURE_SUBSCRIPTION_ID }}
 
 jobs:
   plan:
