@@ -50,7 +50,7 @@ jobs:
         cat <<EOF > config.json
         {
             "targetEnvironment": "${{ inputs.targetEnvironment }}",
-            "backendStorageAccount" : "${{ env.BACKED_STORAGE_ACCOUNT }}",
+            "backendStorageAccount" : "${{ env.BACKEND_STORAGE_ACCOUNT }}",
             "backendContainerName": "${{ env.BACKEND_CONTAINER_NAME }}",
             "backendResourceGroup": "${{ env.BACKEND_RESOURCE_GROUP }}",
             "backendKey": "${{ env.BACKEND_KEY }}",
