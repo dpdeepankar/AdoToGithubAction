@@ -77,10 +77,10 @@ jobs:
     - name: run terraform init
       run: |
        echo "Running terraform init with below parameters"
-       echo "backend storage account : ${{ inputs.backendStorageAccount}} "
-       echo "backend container name: ${{ inputs.backendContainerName }}"
-       echo "backend resource group: ${{ inputs.backendResourceGroup }}"
-       echo "backend key: ${{ inputs.backendKey }}"
+       echo "backend storage account : ${{ inputs.backend_storage_account}} "
+       echo "backend container name: ${{ inputs.backend_container_name }}"
+       echo "backend resource group: ${{ inputs.backend_resource_group }}"
+       echo "backend key: ${{ inputs.backend_state_key }}"
 
     - name: run terraform plan
       run: |
