@@ -24,10 +24,10 @@ on:
          - prod
 
 env:
-  BACKEND_STORAGE_ACCOUNT: "abcd"
+  BACKEND_STORAGE_ACCOUNT: "xyz"
   BACKEND_CONTAINER_NAME: "terraform"
-  BACKEND_KEY: "terraform.tfstate"
-  BACKEND_RESOURCE_GROUP: "rg1"
+  BACKEND_KEY: "terraformxyz.tfstate"
+  BACKEND_RESOURCE_GROUP: "rg1-xyz"
   WORKING_DIR: "terraform-build-and-deploy/environments/dev01"
   WORKFLOW_ENVIRONMENT: 'poc'
 
