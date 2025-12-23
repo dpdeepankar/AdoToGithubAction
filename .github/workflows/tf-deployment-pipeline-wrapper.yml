@@ -45,6 +45,7 @@ jobs:
         echo "azureClientId=$(jq -r '.azureClientId' config.json)" >> $GITHUB_OUTPUT
         echo "azureTenantId=$(jq -r '.azureTenantId' config.json)" >> $GITHUB_OUTPUT
         echo "azureSubscriptionId=$(jq -r '.azureSubscriptionId' config.json)" >> $GITHUB_OUTPUT
+        echo $GITHUB_OUTPUT
 
   deploy:   
     needs: prepare
