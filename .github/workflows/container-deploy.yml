@@ -26,7 +26,7 @@ jobs:
       container_app_name: sample-api
       resource_group: rg-containers
       buildRunId: ${{ github.event.workflow_run.id || inputs.buildRunId }}
-      branch_name: ${{ github.ref_name }}
+      branch_name: ${{ github.event.workflow_run.head_branch || github.ref_name }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -42,7 +42,7 @@ jobs:
       container_app_name: sample-api
       resource_group: rg-containers
       buildRunId: ${{ github.event.workflow_run.id || inputs.buildRunId }}
-      branch_name: ${{ github.ref_name }}
+      branch_name: ${{ github.event.workflow_run.head_branch || github.ref_name }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -59,7 +59,7 @@ jobs:
       container_app_name: sample-api
       resource_group: rg-containers
       buildRunId: ${{ github.event.workflow_run.id || inputs.buildRunId }}
-      branch_name: ${{ github.ref_name }}
+      branch_name: ${{ github.event.workflow_run.head_branch || github.ref_name }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
