@@ -9,6 +9,7 @@ jobs:
     with:
       image_name: sample-api
       image_tag: ${{ github.run_id }}
+      workingDirectory: terraform-build-and-deploy
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       # MEND_API_KEY: ${{ secrets.MEND_API_KEY }}
