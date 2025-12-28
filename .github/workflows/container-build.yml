@@ -13,6 +13,6 @@ jobs:
       image_tag: ${{ github.run_id }}
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      MEND_API_KEY: ${{ secrets.MEND_API_KEY }}
-      MEND_USER_KEY: ${{ secrets.MEND_USER_KEY }}
-      MEND_EMAIL: ${{ secrets.MEND_EMAIL }}
+      # MEND_API_KEY: ${{ secrets.MEND_API_KEY }}
+      # MEND_USER_KEY: ${{ secrets.MEND_USER_KEY }}
+      # MEND_EMAIL: ${{ secrets.MEND_EMAIL }}
