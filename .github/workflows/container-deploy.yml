@@ -16,8 +16,8 @@ permissions:
   contents: read 
   
 jobs:
-  deploy:
-    if: github.event.workflow_run.conclusion == 'success'
+  deploy_to_dev:
+    if: startsWith(github.event.workflow_run.ref_name, 'dev') && github.event.workflow_run.conclusion == 'success'
     uses: dpdeepankar/GithubActionsTest/.github/workflows/template-container-deploy.yml@main
     with:
       image_name: sample-api
