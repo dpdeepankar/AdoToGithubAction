@@ -1,0 +1,21 @@
+name: Container Deploy
+
+on:
+  workflow_run:
+    workflows: ["Container Build"]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    uses: dpdeepankar/GithubActionsTest/.github/workflows/template-container-deploy.yml@v1
+    with:
+      image_name: sample-api
+      image_tag: ${{ github.event.workflow_run.head_sha }}
+      acr_name: myacr
+      container_app_name: sample-api
+      resource_group: rg-containers
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
