@@ -17,7 +17,7 @@ jobs:
   Terraform-Deploy:
     uses: dpdeepankar/GithubActionsTest/.github/workflows/template-tf-deploy.yml@main
     with:
-     buildRunId: ${{ github.run_id }}
+     buildRunId: ${{ github.events.workflow_run.id || inputs.buildRunId }}
      workingDirectory: terraform-build-and-deploy/environments/dev01
      backendStorageAccount: terrafromtfstate
      backendContainerName: tfstate
