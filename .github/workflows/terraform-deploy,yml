@@ -6,6 +6,11 @@ on:
   workflow_run:
     types: ['completed']
     workflows: [Terraform Build]
+  workflow_dispatch:
+    inputs:
+      buildRunId:
+        type: string
+        required: true
 
 jobs:
   Terraform-Deploy:
