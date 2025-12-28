@@ -1,0 +1,59 @@
+
+name: Template Container Build
+
+run-name: ${{ github.run_id }}
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: 'Name of the container to build'
+        required: true
+        type: string
+      image_tag:
+        description: 'Tag for the built image'
+        required: false
+        type: string
+        default: 'latest'
+      dockerfile_path:
+        description: 'Path to the Dockerfile'
+        required: false
+        type: string
+        default: 'Dockerfile'
+
+jobs:
+    build-container:
+        name: Build Container Image
+        runs-on: ubuntu-latest
+        outputs:
+            image-tag: ${{ steps.set-output.outputs.image }}
+        steps:
+            - name: Checkout Source Code
+              uses: actions/checkout@v4
+
+            - name: Snyk Scan
+              uses: snyk/actions/iac@master
+              with:
+                args: terraform
+              env:
+                SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    
+            - name: Set Image Tag Output
+              id: set-output
+              run: |
+                echo "image=${{ inputs.image_name }}:${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+    
+            - name: Build Docker Image
+              run: |
+                docker build -t ${{ inputs.image_name }}:${{ inputs.image_tag }} -f ${{ inputs.dockerfile_path }} 
+    
+            - name: Save Docker Image as Tar
+              run: |
+                docker save ${{ inputs.image_name }}:${{ inputs.image_tag }} -o ${{ inputs.image_name }}-${{ inputs.image_tag }}.tar
+    
+            - name: Upload Docker Image Artifact
+              uses: actions/upload-artifact@v3
+              with:
+                name: ${{ inputs.container_name }}-image
+                path: ${{ inputs.container_name }}-${{ inputs.image_tag }}.tar
+

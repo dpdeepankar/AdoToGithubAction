@@ -1,0 +1,11 @@
+name: Terraform Build
+
+run-name: ${{ github.run_id }}
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build-terraform:
+      uses: dpdeepankar/GithubActionsTest/.github/workflows/template-tf-build.yml@main
+      
