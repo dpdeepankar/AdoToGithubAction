@@ -1,0 +1,19 @@
+name: Terraform Deploy
+
+run-name: ${{ github.run_id }}
+
+on: 
+  workflow_run:
+    types: ['completed']
+    workflows: [Terraform Build]
+
+jobs:
+  Terraform-Deploy:
+    uses: dpdeepankar/GithubActionsTest/.github/workflows/template-tf-deploy.yml@main
+    with:
+     buildRunId: ${{ github.run_id }}
+     workingDirectory: terraform-build-and-deploy/environments/dev01
+     backendStorageAccount: terrafromtfstate
+     backendContainerName: tfstate
+     backendKey: dev01.tfstate
+     backendResourceGroup: devopsmi-rg
