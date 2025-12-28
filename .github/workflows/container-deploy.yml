@@ -6,6 +6,11 @@ on:
     types: [completed]
 
   workflow_dispatch:
+    inputs:
+      buildRunId:
+        required: true
+        type: string
+        
 permissions:
   id-token: write
   contents: read 
@@ -20,6 +25,7 @@ jobs:
       acr_name: myacr
       container_app_name: sample-api
       resource_group: rg-containers
+      buildRunId: ${{ github.event.workflow_run.id || inputs.buildRunId }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
