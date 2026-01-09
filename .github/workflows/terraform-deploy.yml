@@ -1,6 +1,6 @@
 name: Terraform Deploy
 
-run-name: ${{ github.run_id }}
+run-name: ${{ github.run_id }}-${{ github.event.workflow_run.head_branch || github.ref_name }}
 
 on: 
   workflow_run:
